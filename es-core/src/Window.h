@@ -58,8 +58,8 @@ public:
 	void update(int deltaTime);
 	void render();
 
-	bool init();
-	void deinit();
+	bool init(bool initRenderer = true);
+	void deinit(bool deinitRenderer = true);
 
 	void normalizeNextUpdate();
 
@@ -67,8 +67,11 @@ public:
 	bool getAllowSleep();
 	void setAllowSleep(bool sleep);
 
-	void renderLoadingScreen(std::string text, float percent = -1, unsigned char opacity = 255);
+	void renderLoadingScreen(std::string text, float percent = -1, unsigned char opacity = 255);	
 	void endRenderLoadingScreen();
+
+	void loadCustomImageLoadingScreen(std::string imagePath, std::string customText);
+	void renderGameLoadingScreen(float opacity = 1, bool swapBuffers = true);
 
 	void renderHelpPromptsEarly(); // used to render HelpPrompts before a fade
 	void setHelpPrompts(const std::vector<HelpPrompt>& prompts, const HelpStyle& style);
@@ -124,6 +127,7 @@ private:
 
 	std::vector< std::shared_ptr<Font> > mDefaultFonts;
 	std::shared_ptr<TextureResource> mSplash;
+	std::string						 mCustomSplash;
 
 	int mFrameTimeElapsed;
 	int mFrameCountElapsed;

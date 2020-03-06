@@ -62,7 +62,19 @@ bool parseArgs(int argc, char* argv[])
 
 	for(int i = 1; i < argc; i++)
 	{
-		if(strcmp(argv[i], "--resolution") == 0)
+		if (strcmp(argv[i], "--monitor") == 0)
+		{
+			if (i >= argc - 1)
+			{
+				std::cerr << "Invalid monitor supplied.";
+				return false;
+			}
+
+			int monitorId = atoi(argv[i + 1]);
+			i++; // skip the argument value
+			Settings::getInstance()->setInt("MonitorID", monitorId);
+		}
+		else if(strcmp(argv[i], "--resolution") == 0)
 		{
 			if(i >= argc - 2)
 			{
@@ -75,6 +87,7 @@ bool parseArgs(int argc, char* argv[])
 			i += 2; // skip the argument value
 			Settings::getInstance()->setInt("WindowWidth", width);
 			Settings::getInstance()->setInt("WindowHeight", height);
+			Settings::getInstance()->setBool("FullscreenBorderless", false);
 		}else if(strcmp(argv[i], "--screensize") == 0)
 		{
 			if(i >= argc - 2)
@@ -135,10 +148,16 @@ bool parseArgs(int argc, char* argv[])
 			Settings::getInstance()->setBool("Debug", true);
 			Settings::getInstance()->setBool("HideConsole", false);
 			// Log::setReportingLevel(LogDebug);
-		}else if(strcmp(argv[i], "--fullscreen-borderless") == 0)
+		}
+		else if (strcmp(argv[i], "--fullscreen-borderless") == 0)
 		{
 			Settings::getInstance()->setBool("FullscreenBorderless", true);
-		}else if(strcmp(argv[i], "--windowed") == 0)
+		}
+		else if (strcmp(argv[i], "--fullscreen") == 0)
+		{
+		Settings::getInstance()->setBool("FullscreenBorderless", false);
+		}
+		else if(strcmp(argv[i], "--windowed") == 0)
 		{
 			Settings::getInstance()->setBool("Windowed", true);
 		}else if(strcmp(argv[i], "--vsync") == 0)
@@ -197,6 +216,7 @@ bool parseArgs(int argc, char* argv[])
 				"--force-disable-filters		Force the UI to ignore applied filters in gamelist\n"
 				"--home [path]		Directory to use as home path\n"
 				"--help, -h			summon a sentient, angry tuba\n\n"
+				"--monitor [index]			monitor index\n\n"				
 				"More information available in README.md.\n";
 			return false; //exit after printing help
 		}

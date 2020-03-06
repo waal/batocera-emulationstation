@@ -142,13 +142,20 @@ GuiComponent* Window::peekGui()
 	return mGuiStack.back();
 }
 
-bool Window::init()
+bool Window::init(bool initRenderer)
 {
-	if(!Renderer::init())
+	LOG(LogInfo) << "Window::init";
+
+	if (initRenderer)
 	{
-		LOG(LogError) << "Renderer failed to initialize!";
-		return false;
+		if (!Renderer::init())
+		{
+			LOG(LogError) << "Renderer failed to initialize!";
+			return false;
+		}
 	}
+	else 
+		Renderer::activateWindow();
 
 	InputManager::getInstance()->init();
 
@@ -206,7 +213,7 @@ void Window::reactivateGui()
 		peekGui()->updateHelpPrompts();
 }
 
-void Window::deinit()
+void Window::deinit(bool deinitRenderer)
 {
 	for (auto extra : mScreenExtras)
 		extra->onHide();
@@ -215,10 +222,14 @@ void Window::deinit()
 	for(auto i = mGuiStack.cbegin(); i != mGuiStack.cend(); i++)
 		(*i)->onHide();
 
-	InputManager::getInstance()->deinit();
+	if (deinitRenderer)
+		InputManager::getInstance()->deinit();
+
 	TextureResource::clearQueue();
 	ResourceManager::getInstance()->unloadAll();
-	Renderer::deinit();
+
+	if (deinitRenderer)
+		Renderer::deinit();
 }
 
 void Window::textInput(const char* text)
@@ -560,6 +571,7 @@ void Window::setAllowSleep(bool sleep)
 void Window::endRenderLoadingScreen()
 {
 	mSplash = nullptr;	
+	mCustomSplash = "";
 }
 
 void Window::renderLoadingScreen(std::string text, float percent, unsigned char opacity)
@@ -613,6 +625,68 @@ void Window::renderLoadingScreen(std::string text, float percent, unsigned char 
 	SDL_Event event;
 	while (SDL_PollEvent(&event));
 #endif
+}
+
+void Window::loadCustomImageLoadingScreen(std::string imagePath, std::string customText)
+{
+	if (!Utils::FileSystem::exists(imagePath))
+		return;
+
+	if (Settings::getInstance()->getBool("HideWindow"))
+		return;
+
+	if (mSplash != NULL)
+		endRenderLoadingScreen();
+
+	MaxSizeInfo maxSize(Renderer::getScreenWidth() * 0.60f, Renderer::getScreenHeight() * 0.60f);
+	mSplash = TextureResource::get(imagePath, false, false, true, false, false, &maxSize);
+	mCustomSplash = customText;
+
+	std::shared_ptr<ResourceManager>& rm = ResourceManager::getInstance();
+	rm->removeReloadable(mSplash);
+}
+
+void Window::renderGameLoadingScreen(float opacity, bool swapBuffers)
+{
+	if (mSplash == NULL)
+		mSplash = TextureResource::get(":/splash.svg", false, true, false, false);
+
+	Transform4x4f trans = Transform4x4f::Identity();
+	Renderer::setMatrix(trans);
+	Renderer::drawRect(0.0f, 0.0f, Renderer::getScreenWidth(), Renderer::getScreenHeight(), 0x00000000 | (unsigned char)(opacity * 255));
+
+	ImageComponent splash(this, true);
+
+	if (mSplash != NULL)
+		splash.setImage(mSplash);
+	else
+		splash.setImage(":/splash.svg");
+
+	splash.setOrigin(0.5, 0.5);
+	splash.setPosition(Renderer::getScreenWidth() / 2.0f, Renderer::getScreenHeight() * 0.835f / 2.0f);
+	splash.setMaxSize(Renderer::getScreenWidth() * 0.60f, Renderer::getScreenHeight() * 0.60f);
+
+	if (!mCustomSplash.empty())
+		splash.setColorShift(0xFFFFFF00 | (unsigned char)(opacity * 210));
+	else
+		splash.setColorShift(0xFFFFFF00 | (unsigned char)(opacity * 255));
+
+	splash.render(trans);
+
+	auto& font = mDefaultFonts.at(1);
+	font->reload(); // Ensure font is loaded
+
+	TextCache* cache = font->buildTextCache(mCustomSplash.empty() ? _("Loading...") : mCustomSplash, 0, 0, 0x65656500 | (unsigned char)(opacity * 255));
+
+	float x = Math::round((Renderer::getScreenWidth() - cache->metrics.size.x()) / 2.0f);
+	float y = Math::round(Renderer::getScreenHeight() * 0.835f);
+	trans = trans.translate(Vector3f(x, y, 0.0f));
+	Renderer::setMatrix(trans);
+	font->renderTextCache(cache);
+	delete cache;
+
+	if (swapBuffers)
+		Renderer::swapBuffers();
 }
 
 void Window::renderHelpPromptsEarly()

@@ -652,12 +652,20 @@ bool SystemData::isVisible()
 	if (isGroupChildSystem())
 		return false;
 
-	if (SystemConf::getInstance()->get(getName() + ".hide") == "1") // batocera (hide systems)
-	    return false; // batocera (hide systems)
+	if ((getDisplayedGameCount() > 0 ||
+		(UIModeController::getInstance()->isUIModeFull() && mIsCollectionSystem) ||
+		(mIsCollectionSystem && mName == "favorites")))
+	{
+		if (!mIsCollectionSystem)
+		{
+			auto hiddenSystems = Utils::String::split(Settings::getInstance()->getString("HiddenSystems"), ';');
+			return std::find(hiddenSystems.cbegin(), hiddenSystems.cend(), getName()) == hiddenSystems.cend();
+		}
 
-	return (getDisplayedGameCount() > 0 || 
-           (UIModeController::getInstance()->isUIModeFull() && mIsCollectionSystem) ||
-           (mIsCollectionSystem && mName == "favorites"));
+		return true;
+	}
+
+	return false;
 }
 
 SystemData* SystemData::getNext() const
