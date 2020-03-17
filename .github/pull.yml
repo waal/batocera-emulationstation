@@ -3,3 +3,6 @@ rules:
   - base: master
     upstream: batocera-linux:master
     mergeMethod: hardreset
+  - base: stable
+    upstream: batocera-linux:stable
+    mergeMethod: hardreset
