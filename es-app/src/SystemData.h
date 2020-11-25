@@ -264,6 +264,9 @@ public:
 	bool hasKeyboardMapping();
 	KeyMappingFile getKeyboardMapping();
 
+
+	bool shouldExtractHashesFromArchives();
+
 private:
 	std::string getKeyboardMappingFilePath();
 	static void createGroupedSystems();
